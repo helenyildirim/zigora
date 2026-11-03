@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Installs the release APK, walks Home -> Levels -> Level 1, and records what happened.
 set -u
-OUT=crash-report
 PKG=com.helenyildirim.zigora
-mkdir -p "$OUT"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 alive() { [ -n "$(adb shell pidof "$PKG" | tr -d '\r')" ] && echo "alive" || echo "DEAD"; }
@@ -24,23 +22,32 @@ P
   [ -n "${X:-}" ] && adb shell input tap "$X" "$Y"
 }
 
-adb install -r android/app/build/outputs/apk/release/app-release.apk | tee "$OUT/install.txt"
-adb logcat -c
-adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
-sleep 25
-echo "after launch: $(alive)" | tee -a "$OUT/steps.txt"
-shot 1-home
+run() {
+  NAME=$1
+  OUT=crash-report/$NAME
+  mkdir -p "$OUT"
+  adb uninstall "$PKG" > /dev/null 2>&1
+  adb install -r "apks/$NAME.apk" | tee "$OUT/install.txt"
+  adb logcat -c
+  adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+  sleep 25
+  echo "after launch: $(alive)" | tee -a "$OUT/steps.txt"
+  shot 1-home
 
-tap "Oyna" oyna
-sleep 12
-echo "after Oyna: $(alive)" | tee -a "$OUT/steps.txt"
-shot 2-levels
+  tap "Oyna" oyna
+  sleep 12
+  echo "after Oyna: $(alive)" | tee -a "$OUT/steps.txt"
+  shot 2-levels
 
-tap "Seviye 1" level
-sleep 12
-echo "after level 1: $(alive)" | tee -a "$OUT/steps.txt"
-shot 3-level-1
+  tap "Seviye 1" level
+  sleep 12
+  echo "after level 1: $(alive)" | tee -a "$OUT/steps.txt"
+  shot 3-level-1
 
-adb logcat -d > "$OUT/logcat.txt"
-adb logcat -d -b crash > "$OUT/logcat-crash.txt"
+  adb logcat -d > "$OUT/logcat.txt"
+  adb logcat -d -b crash > "$OUT/logcat-crash.txt"
+}
+
+run old
+run fixed
 exit 0

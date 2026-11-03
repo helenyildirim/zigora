@@ -12,6 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/share/swift /usr/local/share/powershell /usr/local/share/chromium
+          sudo docker image prune -af > /dev/null 2>&1 || true
+          df -h /
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -33,11 +40,22 @@ jobs:
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build the APK for the emulator
+      - name: Build the old and the fixed APK
         working-directory: android
         run: |
           chmod +x gradlew
+          mkdir -p ../apks
+          git show 25825f5:src/app/levels.tsx > ../src/app/levels.tsx
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+          cp app/build/outputs/apk/release/app-release.apk ../apks/old.apk
+          git checkout ../src/app/levels.tsx
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+          cp app/build/outputs/apk/release/app-release.apk ../apks/fixed.apk
+
+      - name: Clear build files so the emulator has room
+        run: |
+          rm -rf android node_modules ~/.gradle ~/.npm
+          df -h /
 
       - name: Enable KVM
         run: |
@@ -52,6 +70,8 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
+          ram-size: 3072M
+          emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash scripts/crash-test.sh
 

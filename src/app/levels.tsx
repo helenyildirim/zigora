@@ -71,11 +71,8 @@ export default function LevelsScreen() {
         data={levels}
         numColumns={COLUMNS}
         keyExtractor={(level) => String(level)}
-        initialScrollIndex={firstRow * COLUMNS}
-        getItemLayout={(_, index) => {
-          const row = Math.floor(index / COLUMNS);
-          return { length: ROW_HEIGHT, offset: ROW_HEIGHT * row, index };
-        }}
+        initialScrollIndex={firstRow}
+        getItemLayout={(_, row) => ({ length: ROW_HEIGHT, offset: ROW_HEIGHT * row, index: row })}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
