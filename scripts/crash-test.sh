@@ -5,6 +5,20 @@ PKG=com.helenyildirim.zigora
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 alive() { [ -n "$(adb shell pidof "$PKG" | tr -d '\r')" ] && echo "alive" || echo "DEAD"; }
+screen() {
+  adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1
+  adb exec-out cat /sdcard/ui.xml > "$OUT/screen-$1.xml"
+  echo "--- screen $1"
+  python3 - "$OUT/screen-$1.xml" <<'P'
+import re, sys
+xml = open(sys.argv[1], errors='ignore').read()
+for node in re.findall(r'<node [^>]*>', xml):
+    text = re.search(r' text="([^"]*)"', node).group(1)
+    desc = re.search(r'content-desc="([^"]*)"', node).group(1)
+    if text or desc:
+        print(text or desc, re.search(r'bounds="([^"]*)"', node).group(1))
+P
+}
 tap() {
   adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1
   adb exec-out cat /sdcard/ui.xml > "$OUT/ui-$2.xml"
@@ -33,16 +47,28 @@ run() {
   sleep 25
   echo "after launch: $(alive)" | tee -a "$OUT/steps.txt"
   shot 1-home
+  screen home
 
   tap "Oyna" oyna
   sleep 12
   echo "after Oyna: $(alive)" | tee -a "$OUT/steps.txt"
   shot 2-levels
+  screen levels
 
   tap "Seviye 1" level
   sleep 12
   echo "after level 1: $(alive)" | tee -a "$OUT/steps.txt"
   shot 3-level-1
+
+  screen level
+  tap "İpucu" hint
+  sleep 4
+  echo "after hint: $(alive)" | tee -a "$OUT/steps.txt"
+  screen offer
+  tap "Reklam İzle" ad
+  sleep 30
+  echo "after ad: $(alive)" | tee -a "$OUT/steps.txt"
+  screen ad
 
   adb logcat -d > "$OUT/logcat.txt"
   adb logcat -d -b crash > "$OUT/logcat-crash.txt"

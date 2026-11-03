@@ -42,6 +42,9 @@ jobs:
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --clean --no-install
 
+      - name: Start the test build with no hints so the ad offer appears
+        run: sed -i 's/FULL_HINTS = 5/FULL_HINTS = 0/' src/store/progress.ts && grep -n "FULL_HINTS =" src/store/progress.ts
+
       - name: Build the APK
         working-directory: android
         run: |
