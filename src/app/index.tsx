@@ -1,98 +1,53 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { PlayIcon, GearIcon } from '@/components/icons';
+import { MiniBoard } from '@/components/mini-board';
+import { CircleButton, PrimaryButton, Screen } from '@/components/ui';
+import { getLogoBoard } from '@/engine/levels';
+import { useProgress } from '@/store/progress';
+import { colors, fonts } from '@/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+const logo = getLogoBoard();
 
 export default function HomeScreen() {
+  const current = useProgress((s) => s.current);
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <Screen>
+      <View style={styles.top}>
+        <CircleButton label="Ayarlar" onPress={() => router.push('/settings')}>
+          <GearIcon />
+        </CircleButton>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <View style={styles.hero}>
+        <MiniBoard level={logo} width={250} height={220} />
+        <Text style={styles.title}>Zigora</Text>
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <View style={styles.actions}>
+        <PrimaryButton
+          title="Oyna"
+          icon={<PlayIcon size={24} color="#fff" filled />}
+          onPress={() => router.push('/levels')}
+        />
+        <View style={styles.levelRow}>
+          <View style={styles.dash} />
+          <Text style={styles.level}>Seviye {current}</Text>
+          <View style={styles.dash} />
+        </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  top: { alignItems: 'flex-end', paddingHorizontal: 20 },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 },
+  title: { fontFamily: fonts.black, fontSize: 62, color: colors.ink, letterSpacing: -1 },
+  actions: { paddingHorizontal: 40, gap: 20, paddingBottom: 56 },
+  levelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 6 },
+  dash: { width: 30, height: 1.5, backgroundColor: colors.faint },
+  level: { fontFamily: fonts.semibold, fontSize: 18, color: colors.ink },
 });
