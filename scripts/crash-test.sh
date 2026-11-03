@@ -29,7 +29,7 @@ run() {
   adb uninstall "$PKG" > /dev/null 2>&1
   adb install -r "apks/$NAME.apk" | tee "$OUT/install.txt"
   adb logcat -c
-  adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+  adb shell am start -W -n "$PKG/.MainActivity"
   sleep 25
   echo "after launch: $(alive)" | tee -a "$OUT/steps.txt"
   shot 1-home
@@ -46,8 +46,12 @@ run() {
 
   adb logcat -d > "$OUT/logcat.txt"
   adb logcat -d -b crash > "$OUT/logcat-crash.txt"
+  echo "=== CRASH BUFFER $NAME"
+  head -80 "$OUT/logcat-crash.txt"
+  echo "=== JS AND RUNTIME $NAME"
+  grep -E "ReactNativeJS|AndroidRuntime|libc  |DEBUG   |ActivityManager: (Start|Process|Force)|Expo" "$OUT/logcat.txt" | tail -120
+  echo "=== END $NAME"
 }
 
-run old
 run fixed
 exit 0

@@ -42,15 +42,11 @@ jobs:
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build the old and the fixed APK
+      - name: Build the APK
         working-directory: android
         run: |
           chmod +x gradlew
           mkdir -p ../apks
-          git show 25825f5:src/app/levels.tsx > ../src/app/levels.tsx
-          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
-          cp app/build/outputs/apk/release/app-release.apk ../apks/old.apk
-          git checkout ../src/app/levels.tsx
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
           cp app/build/outputs/apk/release/app-release.apk ../apks/fixed.apk
 
@@ -81,4 +77,6 @@ jobs:
         if: always()
         with:
           name: crash-report
-          path: crash-report
+          path: |
+            crash-report
+            apks
