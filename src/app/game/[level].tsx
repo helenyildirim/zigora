@@ -19,6 +19,7 @@ import { CircleButton, PrimaryButton, Screen } from '@/components/ui';
 import { getLevel, LEVEL_COUNT } from '@/engine/levels';
 import { Level } from '@/engine/types';
 import { MAX_HEARTS, useGame } from '@/hooks/use-game';
+import { showRewardedAd } from '@/lib/ads';
 import { useProgress } from '@/store/progress';
 import { colors, fonts, softShadow } from '@/theme';
 
@@ -37,7 +38,9 @@ export default function GameRoute() {
 function Game({ level }: { level: Level }) {
   const game = useGame(level);
   const complete = useProgress((s) => s.complete);
+  const refillHints = useProgress((s) => s.refillHints);
   const [showWin, setShowWin] = useState(false);
+  const [adOffer, setAdOffer] = useState<'open' | 'loading' | 'failed' | null>(null);
   const won = game.status === 'won';
 
   useEffect(() => {
@@ -46,6 +49,18 @@ function Game({ level }: { level: Level }) {
     const timer = setTimeout(() => setShowWin(true), 520);
     return () => clearTimeout(timer);
   }, [complete, game.clean, game.stars, level.number, won]);
+
+  const askHint = () => {
+    if (game.hints === 0) setAdOffer('open');
+    else game.hint();
+  };
+
+  const watchAd = async () => {
+    setAdOffer('loading');
+    const earned = await showRewardedAd().catch(() => false);
+    if (earned) refillHints();
+    setAdOffer(earned ? null : 'failed');
+  };
 
   const next = () => {
     if (level.number >= LEVEL_COUNT) router.replace('/levels');
@@ -119,13 +134,8 @@ function Game({ level }: { level: Level }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`İpucu, ${game.hints} hak kaldı`}
-          disabled={game.hints === 0}
-          onPress={game.hint}
-          style={({ pressed }) => [
-            styles.tool,
-            game.hints === 0 && styles.toolOff,
-            pressed && styles.toolPressed,
-          ]}>
+          onPress={askHint}
+          style={({ pressed }) => [styles.tool, pressed && styles.toolPressed]}>
           <View>
             <BulbIcon size={24} />
             <View style={styles.badge}>
@@ -176,6 +186,24 @@ function Game({ level }: { level: Level }) {
               icon={<RestartIcon size={22} color="#fff" strokeWidth={2.4} />}
               onPress={game.restart}
             />
+          </Stack>
+        </ResultCard>
+      )}
+      {adOffer && (
+        <ResultCard title="İpucun bitti">
+          <Text style={styles.lostText}>
+            {adOffer === 'failed'
+              ? 'Reklam şu an açılamadı. Birazdan tekrar dene.'
+              : 'Kısa bir reklam izle, ipuçların yenilensin.'}
+          </Text>
+          <Stack>
+            <PrimaryButton
+              title={adOffer === 'loading' ? 'Yükleniyor...' : 'Reklam İzle'}
+              onPress={adOffer === 'loading' ? () => {} : watchAd}
+            />
+            <Pressable accessibilityRole="button" style={styles.cancel} onPress={() => setAdOffer(null)}>
+              <Text style={styles.cancelText}>Vazgeç</Text>
+            </Pressable>
           </Stack>
         </ResultCard>
       )}
@@ -261,5 +289,7 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontFamily: fonts.bold, fontSize: 11, color: '#fff' },
   stars: { flexDirection: 'row', gap: 10 },
+  cancel: { height: 44, alignItems: 'center', justifyContent: 'center' },
+  cancelText: { fontFamily: fonts.semibold, fontSize: 16, color: colors.muted },
   lostText: { fontFamily: fonts.medium, fontSize: 17, color: colors.muted, textAlign: 'center' },
 });

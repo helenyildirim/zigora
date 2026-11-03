@@ -5,6 +5,7 @@ Sade ve modern bir ok bulmaca oyunu. Oklara doğru sırayla dokun, tahtayı temi
 - Expo, React Native, TypeScript, Expo Router, Zustand ve react-native-svg ile yapıldı.
 - 350 şekilli bölüm içerir. Her bölümün kazanılabildiği `npm run verify` ile doğrulanır.
 - Tek kural var: önü açık oku çıkar, tüm okları temizle.
+- İpucu bitince ödüllü reklam izleyen oyuncunun ipuçları yenilenir. Şu an Google'ın test reklamları kullanılıyor.
 
 ## Çalıştırma
 
